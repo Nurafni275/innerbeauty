@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Kopi Kenangan Executive Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{margin:0;font-family:Arial;background:#f4f6f9}
+.header{background:#2c3e50;color:white;padding:20px;text-align:center}
+.cards{display:flex;gap:20px;flex-wrap:wrap;padding:20px}
+.card{flex:1;min-width:200px;background:white;padding:20px;border-radius:10px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1)}
+.card h2{color:#2c3e50}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:30px;padding:20px}
+canvas{background:white;border-radius:10px;padding:10px}
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>KOPI KENANGAN - Executive Dashboard 2025</h1>
+</div>
+
+<div class="cards">
+<div class="card"><h3>Total Revenue</h3><h2 id="rev">Loading...</h2></div>
+<div class="card"><h3>Total Sales</h3><h2 id="sales">Loading...</h2></div>
+<div class="card"><h3>Jam Teramai</h3><h2 id="peak">Loading...</h2></div>
+<div class="card"><h3>Top Produk</h3><h2 id="bestProd">Loading...</h2></div>
+</div>
+
+<div class="charts">
+<canvas id="chartCat"></canvas>
+<canvas id="chartTime"></canvas>
+<canvas id="chartTop"></canvas>
+<canvas id="chartTrend"></canvas>
+</div>
+
+<script>
+fetch("data.json")
+.then(res=>res.json())
+.then(data=>{
+
+let totalRevenue=0;
+let catMap={}, timeMap={}, prodMap={}, trendMap={};
+
+data.forEach(o=>{
+const revenue=o.quantity*o.price;
+totalRevenue+=revenue;
+
+catMap[o.category]=(catMap[o.category]||0)+revenue;
+prodMap[o.product]=(prodMap[o.product]||0)+revenue;
+timeMap[o.time]=(timeMap[o.time]||0)+1;
+
+const month=o.date.substr(0,7);
+trendMap[month]=(trendMap[month]||0)+revenue;
+});
+
+document.getElementById("rev").innerText="Rp "+totalRevenue.toLocaleString();
+document.getElementById("sales").innerText=data.length+" Transactions";
+
+let peakHour=Object.entries(timeMap).sort((a,b)=>b[1]-a[1])[0];
+document.getElementById("peak").innerText=peakHour[0]+":00";
+
+let topProd=Object.entries(prodMap).sort((a,b)=>b[1]-a[1])[0];
+document.getElementById("bestProd").innerText=topProd[0];
+
+new Chart(document.getElementById("chartCat"),{
+type:"pie",
+data:{labels:Object.keys(catMap),
+datasets:[{data:Object.values(catMap)}]}
+});
+
+new Chart(document.getElementById("chartTime"),{
+type:"bar",
+data:{labels:Object.keys(timeMap),
+datasets:[{label:"Transactions",data:Object.values(timeMap)}]}
+});
+
+let top5=Object.entries(prodMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+new Chart(document.getElementById("chartTop"),{
+type:"bar",
+data:{labels:top5.map(x=>x[0]),
+datasets:[{label:"Revenue",data:top5.map(x=>x[1])}]}
+});
+
+new Chart(document.getElementById("chartTrend"),{
+type:"line",
+data:{labels:Object.keys(trendMap),
+datasets:[{label:"Revenue per Month",data:Object.values(trendMap),fill:false}]}
+});
+
+});
+</script>
+
+</body>
+</html>
